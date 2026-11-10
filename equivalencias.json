@@ -1,0 +1,36 @@
+{
+  "_nota": "Cada token del nombre crudo -> el valor LITERAL de la planilla del catalogo (hoja '1-Base de Datos de Formatos'). Olivia busca la foto con los valores que le devuelve consultar_catalogo, asi que el catalogo de fotos tiene que escribirlos igual. Un token que no esta aca aborta la corrida.",
+  "material": {
+    "friselina": "Friselina",
+    "papel": "Papel Kraft"
+  },
+  "estructura": {
+    "fuelle-inferior": "Fuelle inferior",
+    "box": "Box"
+  },
+  "manija": {
+    "flexible": "Flexible",
+    "rinon": "Riñon",
+    "hilo": "Hilo de papel retorcido"
+  },
+  "medida": {
+    "_nota": "La planilla escribe la friselina como ANCHOxALTO+FUELLE y el box como ANCHOxFUELLExALTO. 30x39 y 45x39 son las 30x40+10 y 45x40+10 de la planilla: la KB vieja del cliente las nombraba con 39.",
+    "22x30x10": "22x30+10",
+    "30x30x10": "30x30+10",
+    "30x39x10": "30x40+10",
+    "45x39x10": "45x40+10",
+    "30x12x31": "30x12x31",
+    "30x12x41": "30x12x41"
+  },
+  "color": {
+    "amarillo": "Amarillo",
+    "azul-marino": "Azul marino",
+    "beige": "Beige",
+    "blanco": "Blanco",
+    "marron": "Kraft Marrón",
+    "naranja": "Naranja",
+    "negro": "Negro",
+    "rojo": "Rojo",
+    "verde-botella": "Verde botella"
+  }
+}
