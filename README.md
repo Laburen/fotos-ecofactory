@@ -37,8 +37,8 @@ actualiza `equivalencias.json` y se regenera el catálogo.
 | `equivalencias.json` | Token del nombre crudo → valor literal de la planilla. |
 | `inventario.csv` | Una fila por foto: nombre, valores de la planilla, origen, md5, bytes. |
 | `estandarizar.py` | `origen/` → `fotos/` + `inventario.csv`. Solo stdlib. |
-| `generar_catalogo.py` | `inventario.csv` → `catalogos/*.md` + `*.pdf` con las URLs de jsDelivr. |
-| `catalogos/` | Un `.md` + `.pdf` por fecha. El PDF del día es el que se sube a la KB. |
+| `generar_catalogo.py` | `inventario.csv` → `catalogo-fotos-ecofactory.pdf` con las URLs de jsDelivr. |
+| `catalogo-fotos-ecofactory.pdf` | El catálogo que se sube a la KB. Se pisa en cada corrida; la fecha va impresa adentro. |
 
 ## Cómo agregar fotos
 
@@ -49,6 +49,6 @@ actualiza `equivalencias.json` y se regenera el catálogo.
 4. `git add fotos/ inventario.csv equivalencias.json && git commit && git push`. Hasta acá las URLs
    dan 404.
 5. `python3 generar_catalogo.py` y, unos minutos después del push, `python3 generar_catalogo.py --verificar`.
-6. Commiteá el catálogo y subí el PDF del día a la KB de Olivia, borrando el anterior.
+6. Commiteá `catalogo-fotos-ecofactory.pdf` y subilo a la KB de Olivia, borrando el anterior.
 
 Para **reemplazar** una foto ya publicada, subila con otro número: jsDelivr cachea unas 12 h.

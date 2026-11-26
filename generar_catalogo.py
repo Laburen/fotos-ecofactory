@@ -2,18 +2,17 @@
 """
 Genera el catalogo de fotos de Ecofactory que se sube a la KB de Olivia en laburen.com.
 
-Lee inventario.csv y escribe catalogos/catalogo-fotos-ecofactory-DD_MM_AAAA.{md,pdf}. Una
-seccion por MODELO de bolsa (material + estructura + manija + medida, que es lo que define la
-bolsa en la planilla) y adentro una linea por foto con su color.
+Lee inventario.csv y escribe catalogo-fotos-ecofactory.pdf en la raiz del repo, pisando el
+anterior. Una seccion por MODELO de bolsa (material + estructura + manija + medida, que es lo
+que define la bolsa en la planilla) y adentro una linea por foto con su color.
 
 Los valores van escritos IGUAL que en la planilla del catalogo ("Riñon", "30x40+10", "Azul
 marino"): Olivia busca la foto con los valores que le devolvio consultar_catalogo.
 
-La fecha va en el nombre y tambien impresa abajo del titulo: el PDF se sube a mano a la KB y el
-nombre del archivo puede no sobrevivir a la subida.
+La fecha va impresa abajo del titulo: es lo que dice que version del PDF esta subida a la KB.
 
 Uso:
-    python3 generar_catalogo.py              # genera .md + .html + .pdf
+    python3 generar_catalogo.py              # genera el PDF
     python3 generar_catalogo.py --verificar  # curl -I sobre todas las URLs (despues del push)
 """
 
@@ -23,6 +22,7 @@ import html
 import os
 import subprocess
 import sys
+import tempfile
 import time
 from collections import OrderedDict, defaultdict
 
@@ -38,11 +38,9 @@ SUBDIR = "fotos"
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 INVENTARIO = os.path.join(AQUI, "inventario.csv")
-SALIDA = os.path.join(AQUI, "catalogos")
+PDF = os.path.join(AQUI, "catalogo-fotos-ecofactory.pdf")
 
-HOY = datetime.date.today()
-FECHA_ARCHIVO = HOY.strftime("%d_%m_%Y")
-FECHA_TEXTO = HOY.strftime("%d/%m/%Y")
+FECHA_TEXTO = datetime.date.today().strftime("%d/%m/%Y")
 
 CHROME = ("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
           "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser")
@@ -99,25 +97,6 @@ def etiqueta(r):
     return "%s · Color %s" % (titulo_modelo(r), r["color"])
 
 
-def render_md(por_modelo):
-    L = ["# Catálogo de fotos Ecofactory", "", "Generado el %s." % FECHA_TEXTO, ""]
-    L.append(INTRO.replace("<b>", "").replace("</b>", "").replace("<code>", "").replace("</code>", ""))
-    L.append("")
-    L.append("Bolsas con fotos: %s." % "; ".join(por_modelo))
-    L.append("")
-    for modelo, fotos in por_modelo.items():
-        L += ["---", "", "## %s" % modelo, ""]
-        L.append("Fotos disponibles de la bolsa %s: %d." % (modelo, len(fotos)))
-        L.append("")
-        L.append("Colores con fotos de esta bolsa: %s. No hay fotos de esta bolsa en ningún "
-                 "otro color." % ", ".join(colores(fotos)))
-        L.append("")
-        for r in fotos:
-            L.append("- **%s** — %s" % (etiqueta(r), url_de(r["nombre_nuevo"])))
-        L += ["", "Fin de las fotos de la bolsa %s." % modelo, ""]
-    return "\n".join(L)
-
-
 def render_html(por_modelo):
     e = html.escape
     P = ["""<!doctype html><html lang="es"><head><meta charset="utf-8">
@@ -157,41 +136,40 @@ section { page-break-inside: avoid; }
     return "\n".join(P)
 
 
-def a_pdf(ruta_html, ruta_pdf):
+def a_pdf(html_texto, ruta_pdf):
+    """
+    El HTML es solo el paso intermedio para que Chrome imprima: vive en un temporal y se borra.
+    El PDF tambien se imprime ahi y recien al final pisa el de la raiz, asi una corrida que
+    falla no deja un catalogo a medias ni confunde el viejo con uno nuevo.
+    """
     chrome = next((c for c in CHROME if os.path.exists(c)), None)
     if not chrome:
-        print("  ! no encontre Chrome ni Brave: queda solo el .md y el .html")
-        return False
-    r = subprocess.run([chrome, "--headless", "--disable-gpu", "--no-pdf-header-footer",
-                        "--print-to-pdf=%s" % ruta_pdf, "file://%s" % ruta_html],
-                       capture_output=True)
-    if not os.path.exists(ruta_pdf):
-        print("  ! Chrome no genero el PDF: %s" % r.stderr.decode()[:300])
-        return False
-    return True
+        sys.exit("no encontre Chrome ni Brave para imprimir el PDF")
+    with tempfile.TemporaryDirectory() as tmp:
+        ht, pdf = os.path.join(tmp, "catalogo.html"), os.path.join(tmp, "catalogo.pdf")
+        with open(ht, "w", encoding="utf-8") as fh:
+            fh.write(html_texto)
+        r = subprocess.run([chrome, "--headless", "--disable-gpu", "--no-pdf-header-footer",
+                            "--print-to-pdf=%s" % pdf, "file://%s" % ht], capture_output=True)
+        if not os.path.exists(pdf):
+            sys.exit("Chrome no genero el PDF: %s" % r.stderr.decode()[:300])
+        os.replace(pdf, ruta_pdf)
 
 
 def generar():
     por_modelo, filas = leer_inventario()
-    os.makedirs(SALIDA, exist_ok=True)
 
     largas = [url_de(r["nombre_nuevo"]) for r in filas if len(url_de(r["nombre_nuevo"])) > MAX_CHARS_URL]
     if largas:
         sys.exit("%d URLs pasan los %d chars y se partirian en el PDF:\n  %s"
                  % (len(largas), MAX_CHARS_URL, "\n  ".join(largas)))
 
-    nombre = "catalogo-fotos-ecofactory-%s" % FECHA_ARCHIVO
-    md, ht, pdf = (os.path.join(SALIDA, nombre + ext) for ext in (".md", ".html", ".pdf"))
-    with open(md, "w", encoding="utf-8") as fh:
-        fh.write(render_md(por_modelo))
-    with open(ht, "w", encoding="utf-8") as fh:
-        fh.write(render_html(por_modelo))
-    ok = a_pdf(ht, pdf)
+    a_pdf(render_html(por_modelo), PDF)
 
     for modelo, fotos in por_modelo.items():
         print("  %-60s %d  (%s)" % (modelo, len(fotos), ", ".join(colores(fotos))))
     print("\n  %d fotos en %d bolsas" % (len(filas), len(por_modelo)))
-    print("  A la KB va: %s" % (pdf if ok else md))
+    print("  A la KB va: %s" % PDF)
 
 
 def verificar():
