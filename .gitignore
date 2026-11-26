@@ -1,2 +1,3 @@
 .DS_Store
 origen/
+__pycache__/

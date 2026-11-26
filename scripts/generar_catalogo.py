@@ -2,22 +2,24 @@
 """
 Genera el catalogo de fotos de Ecofactory que se sube a la KB de Olivia en laburen.com.
 
-Lee inventario.csv y escribe catalogo-fotos-ecofactory.pdf en la raiz del repo, pisando el
-anterior. Una seccion por MODELO de bolsa (material + estructura + manija + medida, que es lo
-que define la bolsa en la planilla) y adentro una linea por foto con su color.
+Lee datos/inventario.csv y escribe catalogo-fotos-ecofactory-DD_MM_AAAA.pdf en la raiz del
+repo, borrando el anterior. Una seccion por MODELO de bolsa (material + estructura + manija +
+medida, que es lo que define la bolsa en la planilla) y adentro una linea por foto con su color.
 
 Los valores van escritos IGUAL que en la planilla del catalogo ("Riñon", "30x40+10", "Azul
 marino"): Olivia busca la foto con los valores que le devolvio consultar_catalogo.
 
-La fecha va impresa abajo del titulo: es lo que dice que version del PDF esta subida a la KB.
+La fecha va en el nombre y tambien impresa abajo del titulo: el PDF se sube a mano a la KB y el
+nombre del archivo puede no sobrevivir a la subida.
 
 Uso:
-    python3 generar_catalogo.py              # genera el PDF
-    python3 generar_catalogo.py --verificar  # curl -I sobre todas las URLs (despues del push)
+    python3 scripts/generar_catalogo.py              # genera el PDF
+    python3 scripts/generar_catalogo.py --verificar  # curl -I sobre todas las URLs (despues del push)
 """
 
 import csv
 import datetime
+import glob
 import html
 import os
 import subprocess
@@ -36,11 +38,16 @@ SUBDIR = "fotos"
 # esa consulta aparte, y un repo recien creado puede quedar en 404 un buen rato (le paso a
 # fotos-byd-simone). jsDelivr cachea ~12 h: para reemplazar una foto, subila con otro nombre.
 
-AQUI = os.path.dirname(os.path.abspath(__file__))
-INVENTARIO = os.path.join(AQUI, "inventario.csv")
-PDF = os.path.join(AQUI, "catalogo-fotos-ecofactory.pdf")
-
-FECHA_TEXTO = datetime.date.today().strftime("%d/%m/%Y")
+# Los scripts viven en scripts/ y los datos en datos/: todo se resuelve desde la raiz.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATOS = os.path.join(RAIZ, "datos")
+INVENTARIO = os.path.join(DATOS, "inventario.csv")
+HOY = datetime.date.today()
+FECHA_TEXTO = HOY.strftime("%d/%m/%Y")
+# Un solo catalogo en la raiz, con la fecha en el nombre: asi se ve de un vistazo que version
+# tiene que estar cargada en la KB. Al generar uno nuevo se borra el anterior.
+PREFIJO_PDF = "catalogo-fotos-ecofactory-"
+PDF = os.path.join(RAIZ, "%s%s.pdf" % (PREFIJO_PDF, HOY.strftime("%d_%m_%Y")))
 
 CHROME = ("/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
           "/Applications/Brave Browser.app/Contents/MacOS/Brave Browser")
@@ -70,7 +77,7 @@ def titulo_modelo(r):
 
 def leer_inventario():
     if not os.path.exists(INVENTARIO):
-        sys.exit("no encuentro %s: corre estandarizar.py --aplicar primero" % INVENTARIO)
+        sys.exit("no encuentro %s: corre scripts/estandarizar.py --aplicar primero" % INVENTARIO)
     with open(INVENTARIO, encoding="utf-8") as fh:
         filas = list(csv.DictReader(fh))
     if not filas:
@@ -153,6 +160,8 @@ def a_pdf(html_texto, ruta_pdf):
                             "--print-to-pdf=%s" % pdf, "file://%s" % ht], capture_output=True)
         if not os.path.exists(pdf):
             sys.exit("Chrome no genero el PDF: %s" % r.stderr.decode()[:300])
+        for viejo in glob.glob(os.path.join(os.path.dirname(ruta_pdf), PREFIJO_PDF + "*.pdf")):
+            os.remove(viejo)
         os.replace(pdf, ruta_pdf)
 
 

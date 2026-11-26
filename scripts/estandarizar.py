@@ -21,8 +21,8 @@ Modo incremental: lo que ya esta en inventario.csv (por md5) no se toca, solo se
 las filas nuevas.
 
 Uso:
-    python3 estandarizar.py            # dry-run: muestra la tabla de renombres
-    python3 estandarizar.py --aplicar  # copia a fotos/ y escribe inventario.csv
+    python3 scripts/estandarizar.py            # dry-run: muestra la tabla de renombres
+    python3 scripts/estandarizar.py --aplicar  # copia a fotos/ y escribe inventario.csv
 """
 
 import csv
@@ -34,11 +34,13 @@ import shutil
 import sys
 import unicodedata
 
-AQUI = os.path.dirname(os.path.abspath(__file__))
-ORIGEN = os.path.join(AQUI, "origen")
-FOTOS = os.path.join(AQUI, "fotos")
-INVENTARIO = os.path.join(AQUI, "inventario.csv")
-EQUIVALENCIAS = os.path.join(AQUI, "equivalencias.json")
+# Los scripts viven en scripts/ y los datos en datos/: todo se resuelve desde la raiz.
+RAIZ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+DATOS = os.path.join(RAIZ, "datos")
+ORIGEN = os.path.join(RAIZ, "origen")
+FOTOS = os.path.join(RAIZ, "fotos")
+INVENTARIO = os.path.join(DATOS, "inventario.csv")
+EQUIVALENCIAS = os.path.join(DATOS, "equivalencias.json")
 
 CAMPOS = ("material", "estructura", "manija", "medida", "color")
 EXTENSIONES = {".jpg": ".jpg", ".jpeg": ".jpg", ".png": ".png"}

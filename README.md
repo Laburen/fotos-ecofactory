@@ -22,33 +22,32 @@ Todo en minúscula, solo `a-z 0-9 - _`. La medida va con el valor de la planilla
 Olivia busca la foto con los valores que le devuelve `consultar_catalogo`. Por eso el catálogo de
 fotos escribe material, estructura, manija, medida y color **literalmente igual** que la hoja
 `1-Base de Datos de Formatos` (`Riñon`, `30x40+10`, `Azul marino`). La traducción vive en
-`equivalencias.json`, y si aparece un token que no está ahí, `estandarizar.py` corta: nunca adivina.
+`datos/equivalencias.json`, y si aparece un token que no está ahí, `scripts/estandarizar.py` corta: nunca adivina.
 
 Las fotos vinieron con `30x39x10` y `45x39x10`, que en la planilla son `30x40+10` y `45x40+10` (la
 KB vieja del cliente las nombraba con 39). Si el cliente cambia la medida en la planilla, se
-actualiza `equivalencias.json` y se regenera el catálogo.
+actualiza `datos/equivalencias.json` y se regenera el catálogo.
 
 ## Qué hay acá
 
 | | |
 |---|---|
+| `catalogo-fotos-ecofactory-DD_MM_AAAA.pdf` | El catálogo que se sube a la KB. Hay uno solo: al generar uno nuevo se borra el anterior. |
 | `fotos/` | Las fotos publicadas, en una carpeta plana. No se redimensionan: pesan menos de 2 MB. |
+| `datos/` | `inventario.csv` (una fila por foto: nombre, valores de la planilla, origen, md5, bytes) y `equivalencias.json` (token del nombre crudo → valor literal de la planilla). |
+| `scripts/` | `estandarizar.py` (`origen/` → `fotos/` + inventario) y `generar_catalogo.py` (inventario → PDF con las URLs de jsDelivr). Solo stdlib. |
 | `origen/` | Las fotos crudas tal como llegan. **Fuera de git.** |
-| `equivalencias.json` | Token del nombre crudo → valor literal de la planilla. |
-| `inventario.csv` | Una fila por foto: nombre, valores de la planilla, origen, md5, bytes. |
-| `estandarizar.py` | `origen/` → `fotos/` + `inventario.csv`. Solo stdlib. |
-| `generar_catalogo.py` | `inventario.csv` → `catalogo-fotos-ecofactory.pdf` con las URLs de jsDelivr. |
-| `catalogo-fotos-ecofactory.pdf` | El catálogo que se sube a la KB. Se pisa en cada corrida; la fecha va impresa adentro. |
 
 ## Cómo agregar fotos
 
 1. Copiá las fotos crudas a `origen/` con el nombre `material_estructura_manija_medida_color_NN.jpg`.
-2. `python3 estandarizar.py` → dry-run. Si un token no está en `equivalencias.json`, agregalo con
+2. `python3 scripts/estandarizar.py` → dry-run. Si un token no está en `datos/equivalencias.json`, agregalo con
    el valor exacto de la planilla.
-3. `python3 estandarizar.py --aplicar`
-4. `git add fotos/ inventario.csv equivalencias.json && git commit && git push`. Hasta acá las URLs
+3. `python3 scripts/estandarizar.py --aplicar`
+4. `git add fotos/ datos/ && git commit && git push`. Hasta acá las URLs
    dan 404.
-5. `python3 generar_catalogo.py` y, unos minutos después del push, `python3 generar_catalogo.py --verificar`.
-6. Commiteá `catalogo-fotos-ecofactory.pdf` y subilo a la KB de Olivia, borrando el anterior.
+5. `python3 scripts/generar_catalogo.py` y, unos minutos después del push, `python3 scripts/generar_catalogo.py --verificar`.
+6. Commiteá el `catalogo-fotos-ecofactory-<DD_MM_AAAA>.pdf` de la raíz y subilo a la KB de Olivia,
+   borrando el anterior.
 
 Para **reemplazar** una foto ya publicada, subila con otro número: jsDelivr cachea unas 12 h.
